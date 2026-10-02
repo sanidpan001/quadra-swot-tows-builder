@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quadra — Free SWOT Analysis Generator &amp; TOWS Matrix Builder</title>
+<meta name="description" content="Build a SWOT analysis and turn it into a TOWS strategy matrix with guided pairings, impact x effort prioritization and a printable one-page brief. Free, no signup.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFE7D7; --green:#2F6B4F; --green-dark:#224E3A; --amber:#E9B44C;
+    --ink:#2B2620;
+  }
+  html{ scroll-behavior:smooth; }
+  body{
+    font-family:'Sora',ui-sans-serif,system-ui,sans-serif;
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      radial-gradient(rgba(120,90,40,.10) 1px, transparent 1.6px),
+      radial-gradient(rgba(120,90,40,.06) 1px, transparent 1.6px);
+    background-size:22px 22px, 34px 34px;
+    background-position:0 0, 11px 13px;
+  }
+  .font-hand{ font-family:'Caveat',cursive; }
+  .site-header{ background:linear-gradient(120deg,var(--green-dark),var(--green)); }
+  .quad-logo{ display:grid; grid-template-columns:1fr 1fr; gap:2px; width:30px; height:30px; }
+  .quad-logo span{ border-radius:4px; }
+  .quad-logo span:nth-child(1){ background:#8FD0A8; }
+  .quad-logo span:nth-child(2){ background:var(--amber); }
+  .quad-logo span:nth-child(3){ background:#7FB3E8; }
+  .quad-logo span:nth-child(4){ background:#E89AA0; }
+  .badge-free{
+    display:inline-flex; align-items:center; gap:.5rem;
+    background:var(--green); color:#FFF8E8;
+    border:2px dashed var(--amber); border-radius:9999px;
+    padding:.45rem 1.1rem; font-weight:700; font-size:.85rem; letter-spacing:.02em;
+  }
+  .step-pill{ transition:all .18s ease; }
+  .step-pill.active{ background:var(--green); color:#FFF8E8; border-color:var(--green); }
+  .step-pill.done{ background:#FFF8E8; color:var(--green); border-color:var(--green); }
+  .cork-panel{
+    background:
+      linear-gradient(rgba(233,180,76,.10), rgba(233,180,76,.10)),
+      repeating-linear-gradient(45deg, rgba(120,85,40,.05) 0 6px, transparent 6px 12px),
+      #E4D3AE;
+    border:10px solid #8A5A2B;
+    border-radius:10px;
+    box-shadow: inset 0 0 40px rgba(90,55,20,.25), 0 10px 24px rgba(60,40,15,.25);
+  }
+  .quad-head{ border-bottom:3px dashed rgba(43,38,32,.35); }
+  .sticky-note{
+    position:relative; border-radius:2px 2px 8px 8px;
+    box-shadow:0 6px 12px rgba(50,35,10,.28);
+    transform:rotate(var(--rot,0deg));
+    transition:transform .15s ease, box-shadow .15s ease;
+    cursor:grab;
+  }
+  .sticky-note:hover{ transform:rotate(0deg) scale(1.02); box-shadow:0 10px 18px rgba(50,35,10,.32); z-index:5; }
+  .sticky-note.dragging{ opacity:.45; }
+  .sticky-note .pin{
+    position:absolute; top:-9px; left:50%; transform:translateX(-50%);
+    width:18px; height:18px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ff8f8f, #b91c1c 70%);
+    box-shadow:0 2px 4px rgba(0,0,0,.4);
+  }
+  .drop-hint{ outline:3px dashed var(--green); outline-offset:-6px; border-radius:8px; }
+  .opt-card{ transition:all .15s ease; cursor:pointer; }
+  .opt-card:hover{ border-color:var(--green); transform:translateY(-1px); }
+  .opt-card.selected{ background:#FFF8E8; border-color:var(--green); box-shadow:0 0 0 2px var(--green); }
+  input[type=range]{ accent-color:var(--green); }
+  .tier-quick{ background:#2F6B4F; color:#fff; }
+  .tier-major{ background:#1D4ED8; color:#fff; }
+  .tier-fillin{ background:#E9B44C; color:#3A2E12; }
+  .tier-sink{ background:#9CA3AF; color:#fff; }
+  .tier-unvoted{ background:#E5E0D2; color:#6B6252; }
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+    background:#2B2620; color:#FFF8E8; padding:.7rem 1.2rem; border-radius:10px;
+    font-size:.9rem; opacity:0; pointer-events:none; transition:all .25s ease; z-index:80;
+    max-width:92vw; text-align:center; box-shadow:0 8px 20px rgba(0,0,0,.35);
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .article-body h2{ font-size:1.5rem; font-weight:800; color:var(--green-dark); margin:2rem 0 .8rem; }
+  .article-body h3{ font-size:1.15rem; font-weight:700; margin:1.4rem 0 .5rem; }
+  .article-body p{ margin:.7rem 0; line-height:1.75; }
+  .article-body ul{ list-style:disc; margin:.7rem 0 .7rem 1.4rem; line-height:1.75; }
+  .article-body ol{ list-style:decimal; margin:.7rem 0 .7rem 1.4rem; line-height:1.75; }
+  .faq-item summary{ cursor:pointer; font-weight:700; }
+  .faq-item summary::-webkit-details-marker{ color:var(--green); }
+  @media print{
+    header.site-header, #screen-root, .toast{ display:none !important; }
+    body{ background:#fff; }
+    #brief-print{ display:block !important; }
+    .no-print{ display:none !important; }
+  }
+</style>
+</head>
+<body id="top">
+<div id="screen-root">
+
+<header class="site-header sticky top-0 z-50 shadow-lg">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5">
+      <span class="quad-logo" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+      <span class="text-2xl font-extrabold tracking-tight" style="color:#FFF8E8">Quadra</span>
+    </a>
+    <nav class="flex items-center gap-5 text-sm font-semibold">
+      <a href="#top" class="hover:underline" style="color:#FFF8E8">Home</a>
+      <a href="https://fixoraa.tech" class="hover:underline" style="color:#E9B44C">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<section class="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-4 text-center">
+  <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight" style="color:#224E3A">
+    SWOT Analysis Generator<br class="sm:hidden"> &amp; TOWS Matrix Builder
+  </h1>
+  <p class="mt-4 text-base sm:text-lg max-w-2xl mx-auto" style="color:#5c5344">
+    Pin your strengths, weaknesses, opportunities and threats on a corkboard war room,
+    let the guided TOWS worksheet pair them into real strategies, then rank every move
+    by impact and effort and print a one-page strategy brief.
+  </p>
+  <div class="mt-5"><span class="badge-free">Unlimited Free Usage &middot; No signup &middot; No paywall</span></div>
+</section>
+
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main id="tool" class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+  <div id="app">
+    <nav id="step-nav" class="flex flex-wrap justify-center gap-2 mb-8" aria-label="Steps"></nav>
+    <section id="step-board" class="step-pane"></section>
+    <section id="step-worksheet" class="step-pane hidden"></section>
+    <section id="step-matrix" class="step-pane hidden"></section>
+    <section id="step-prioritize" class="step-pane hidden"></section>
+    <section id="step-brief" class="step-pane hidden"></section>
+  </div>
+</main>
+
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script async src="https://js.wpadmngr.com/static/adManager.js" data-admpid="464498"></script>
+    </div>
+  </div>
+</div>
+
+<!-- ARTICLE START -->
+<article id="seo-article" class="max-w-4xl mx-auto px-4 sm:px-6 pb-10 article-body" style="color:#3d362b">
+  <h2>What Is a SWOT Analysis?</h2>
+  <p>A SWOT analysis is a structured planning framework that evaluates four dimensions of any venture, project, team or career decision: <strong>Strengths</strong>, <strong>Weaknesses</strong>, <strong>Opportunities</strong> and <strong>Threats</strong>. Strengths and weaknesses are internal factors — things you control, such as your skills, resources, brand reputation or cost structure. Opportunities and threats are external factors — market trends, competitor moves, regulation and economic shifts that you must respond to but cannot directly control. The framework dates back to management research at Stanford in the 1960s and 1970s, and it has survived for a simple reason: it forces honest, categorized thinking before decisions get made.</p>
+  <p>A good SWOT analysis template does more than list bullet points. It separates what is true today (strengths and weaknesses) from what could be true tomorrow (opportunities and threats), and it keeps each quadrant specific enough to act on. "Good team" is not a useful strength; "a support team that resolves 94% of tickets within four hours" is. The more concrete each sticky note on your board, the more valuable the strategies that come out of it later.</p>
+
+  <h2>The Four Quadrants, Done Right</h2>
+  <h3>Strengths: your unfair advantages</h3>
+  <p>Strengths are internal, positive and present-tense. Ask: what do customers praise us for? What do we do cheaper, faster or better than alternatives? What assets — data, relationships, patents, cash, talent — would be hard for a rival to copy? Write each strength as one observable fact per note. If a strength cannot be observed or measured by someone outside your team, rewrite it until it can.</p>
+  <h3>Weaknesses: the honest inventory</h3>
+  <p>Weaknesses are internal, negative and present-tense. This quadrant is where most SWOT exercises fail, because teams soften the truth. Ask the uncomfortable questions: where do we lose deals, what breaks under load, which skills are missing, what do one-star reviews keep repeating? A weakness phrased as "we could improve our marketing" is useless; "we have zero inbound pipeline and rely on two referral partners" is a weakness you can actually fix.</p>
+  <h3>Opportunities: where the wind is blowing</h3>
+  <p>Opportunities are external and positive. Look at market growth, underserved segments, regulatory changes, new distribution channels, technology shifts and competitor stumbles. The test of a real opportunity is that it exists whether or not you act on it — a rising tide you can choose to surf. Rank opportunities by size and by fit: a giant market you cannot serve is a distraction, not an opportunity.</p>
+  <h3>Threats: what could sink the plan</h3>
+  <p>Threats are external and negative: new entrants, price wars, platform dependency, regulation, supply-chain shocks, changing customer habits. Name each threat specifically and, where possible, note its likelihood and timing. "AI disruption" is vague; "two competitors launched AI-assisted onboarding that cuts setup time from days to minutes" is a threat you can strategize against.</p>
+
+  <h2>The Problem with Most SWOTs: Lists That Go Nowhere</h2>
+  <p>Here is the uncomfortable truth about the classic SWOT analysis template: most teams fill the four boxes, admire the result for ten minutes, and then go back to doing whatever they were already doing. A SWOT on its own is descriptive, not prescriptive. It tells you where you stand, but not where to step. Consultants have a name for this failure mode — the "laundry list" SWOT — and it is the reason many founders quietly consider SWOT a waste of time.</p>
+  <p>The fix is a lesser-known companion framework called the <strong>TOWS matrix</strong>, developed by Heinz Weihrich in 1982. TOWS takes the exact same four quadrants and flips the question: instead of "what are our factors?", it asks "what do our factors tell us to <em>do</em>?" Every cell of the TOWS matrix pairs an internal factor with an external one and produces a strategy. That pairing step is the entire difference between a SWOT that decorates a slide deck and a SWOT that drives a roadmap.</p>
+
+  <h2>The TOWS Matrix: Turning Factors into Strategy</h2>
+  <p>The TOWS matrix template crosses the internal quadrants (Strengths, Weaknesses) with the external quadrants (Opportunities, Threats) to produce four strategy types. Each strategy answers a specific question, and together they cover offense, improvement, defense and survival.</p>
+  <h3>SO strategies (Maxi-Maxi): play offense</h3>
+  <p>SO strategies ask: <em>which strength helps us capture which opportunity?</em> These are your highest-confidence moves — you are deploying proven advantages against favorable conditions. Example: a bakery with a loyal neighborhood following (strength) notices offices reopening nearby (opportunity); the SO strategy is a corporate catering subscription pitched first to regulars who work in those offices. When Quadra's guided worksheet asks "which strength will help you capture this opportunity?", it is building your SO list one pairing at a time.</p>
+  <h3>WO strategies (Mini-Maxi): fix to grow</h3>
+  <p>WO strategies ask: <em>which weakness must we fix to seize which opportunity?</em> These are improvement bets — you invest in removing an internal limitation because an external prize justifies it. Example: a freelancer with no online presence (weakness) sees startups hiring fractional designers (opportunity); the WO strategy is to ship a portfolio site and two case studies within 30 days, then pitch ten startups a week. WO strategies are often the highest-leverage items on the board, because the weakness was already costing you and the opportunity gives the fix a deadline.</p>
+  <h3>ST strategies (Maxi-Mini): build the moat</h3>
+  <p>ST strategies ask: <em>which strength shields us against which threat?</em> These are defensive moves that turn advantages into protection. Example: a SaaS company with best-in-class onboarding (strength) faces a well-funded competitor entering the market (threat); the ST strategy is to double down on migration concierge and annual contracts that raise switching costs before the competitor gains traction. Good ST strategies convert "we hope they don't attack" into "let them try".</p>
+  <h3>WT strategies (Mini-Mini): survive and stabilize</h3>
+  <p>WT strategies ask: <em>which weakness makes which threat most dangerous, and how do we reduce that exposure?</em> These are damage-control moves: retrenchment, partnerships, hedging, or orderly exits from losing positions. Example: a retailer dependent on one supplier (weakness) faces rising import tariffs (threat); the WT strategy is to qualify a domestic backup supplier within a quarter. Nobody enjoys WT planning, but teams that skip it are the ones blindsided later.</p>
+
+  <h2>From Strategies to Action: Impact × Effort Prioritization</h2>
+  <p>A finished TOWS matrix can easily hold a dozen strategies, and you cannot execute twelve things at once. The classic prioritization tool is the <strong>impact–effort matrix</strong>: score each strategy on expected impact (1–5) and required effort (1–5), then sort by the ratio of impact to effort. Quadra computes this automatically and drops every strategy into one of four buckets:</p>
+  <ul>
+    <li><strong>Quick Wins</strong> (high impact, low effort) — do these first. They build momentum and fund harder work.</li>
+    <li><strong>Major Projects</strong> (high impact, high effort) — plan carefully, assign owners, break into milestones.</li>
+    <li><strong>Fill-Ins</strong> (low impact, low effort) — tackle in spare cycles; nice polish, not strategy.</li>
+    <li><strong>Time Sinks</strong> (low impact, high effort) — avoid or defer. Saying no here is the strategy.</li>
+  </ul>
+  <p>Two practical tips make the voting honest. First, score impact on outcomes that matter to the business — revenue, retention, cost — not on how exciting the idea feels. Second, score effort in real units: person-weeks, cash outlay, calendar time. When a "quick win" turns out to need three teams and a quarter, it was never a quick win; the matrix just exposed it early, which is exactly its job.</p>
+
+  <h2>Common SWOT Mistakes (and How to Avoid Them)</h2>
+  <ul>
+    <li><strong>Vague entries.</strong> "Good brand" helps nobody. Rewrite until each note names something observable.</li>
+    <li><strong>Mixing internal and external.</strong> A competitor's pricing is not your weakness — it is a threat. Your slow release cycle is the weakness. Keep the axes clean or the pairings break.</li>
+    <li><strong>Too many notes.</strong> Ten crisp notes per quadrant beat thirty fuzzy ones. Merge duplicates ruthlessly.</li>
+    <li><strong>Skipping the TOWS step.</strong> A SWOT without pairings is a poster. Force every opportunity and every threat through at least one strategy question.</li>
+    <li><strong>Treating it as one-and-done.</strong> Revisit the board quarterly. Strengths decay, threats evolve, and last quarter's WT survival move may be this quarter's SO offensive.</li>
+    <li><strong>Ranking by gut feel.</strong> Use the impact × effort vote. It takes five minutes and kills endless debate.</li>
+  </ul>
+
+  <h2>How to Use Quadra, Step by Step</h2>
+  <ol>
+    <li><strong>Build the board.</strong> Add sticky notes to each quadrant — drag them around, move them between quadrants, edit or delete freely. Everything saves in your browser automatically.</li>
+    <li><strong>Run the guided worksheet.</strong> Quadra walks you through prompted pairings — "which strength captures this opportunity?" — one question at a time, so no pairing gets skipped.</li>
+    <li><strong>Review the TOWS matrix.</strong> Your answers become SO, WO, ST and WT strategies. Add your own custom strategies where the worksheet missed something.</li>
+    <li><strong>Vote impact × effort.</strong> Score every strategy, watch the 2×2 matrix plot your dots, and get a ranked action list with Quick Wins on top.</li>
+    <li><strong>Print the brief.</strong> Export a clean one-page strategy brief — your SWOT summary, ranked actions and tier breakdown — ready for the team meeting.</li>
+  </ol>
+  <p>Whether you are validating a startup idea, planning a product launch, preparing a marketing strategy or making a career move, a disciplined SWOT-to-TOWS pass turns scattered opinions into a sequenced plan. Start with honest notes, pair them deliberately, prioritize ruthlessly — and let the brief hold you accountable.</p>
+</article>
+<!-- ARTICLE END -->
+
+<section class="max-w-4xl mx-auto px-4 sm:px-6 pb-12">
+  <h2 class="text-2xl font-extrabold mb-5" style="color:#224E3A">Frequently Asked Questions</h2>
+  <div class="space-y-3">
+    <details class="faq-item bg-white/70 rounded-xl p-4 shadow-sm border border-[#d8c9a8]">
+      <summary>What is the difference between a SWOT analysis and a TOWS matrix?</summary>
+      <p class="mt-2 leading-relaxed" style="color:#5c5344">A SWOT analysis lists your internal strengths and weaknesses alongside external opportunities and threats. A TOWS matrix goes one step further: it pairs those factors to generate strategies — SO (use strengths to capture opportunities), WO (fix weaknesses to seize opportunities), ST (use strengths to defend against threats) and WT (minimize weaknesses and avoid threats). Think of SWOT as the diagnosis and TOWS as the prescription.</p>
+    </details>
+    <details class="faq-item bg-white/70 rounded-xl p-4 shadow-sm border border-[#d8c9a8]">
+      <summary>Is this SWOT analysis template really free? Do I need an account?</summary>
+      <p class="mt-2 leading-relaxed" style="color:#5c5344">Yes — Quadra is completely free with unlimited usage and no signup, paywall or watermark. Your board is saved in your own browser's local storage, so your strategic notes never leave your device.</p>
+    </details>
+    <details class="faq-item bg-white/70 rounded-xl p-4 shadow-sm border border-[#d8c9a8]">
+      <summary>How many items should I put in each SWOT quadrant?</summary>
+      <p class="mt-2 leading-relaxed" style="color:#5c5344">Aim for 3–8 specific notes per quadrant. Fewer than three and you are probably missing something important; more than ten and the matrix becomes noisy. One concrete idea per sticky note works best — merge duplicates and rewrite vague entries until they name something observable.</p>
+    </details>
+    <details class="faq-item bg-white/70 rounded-xl p-4 shadow-sm border border-[#d8c9a8]">
+      <summary>Can you give an example of an SO strategy from a TOWS matrix?</summary>
+      <p class="mt-2 leading-relaxed" style="color:#5c5344">Sure. If a bakery's strength is "loyal regulars who visit daily" and the opportunity is "offices reopening nearby", the SO strategy is: use the loyal regulars to capture the office reopening — for example, launching a corporate catering subscription pitched first to regulars who work in those offices. Quadra's guided worksheet builds pairings exactly like this, one prompt at a time.</p>
+    </details>
+    <details class="faq-item bg-white/70 rounded-xl p-4 shadow-sm border border-[#d8c9a8]">
+      <summary>How does the impact × effort prioritization work?</summary>
+      <p class="mt-2 leading-relaxed" style="color:#5c5344">You score each strategy from 1 to 5 on expected impact and on required effort. Quadra ranks them by the impact-to-effort ratio and sorts them into Quick Wins (high impact, low effort — do first), Major Projects (high impact, high effort — plan carefully), Fill-Ins (low effort — do when time allows) and Time Sinks (low impact, high effort — avoid or defer).</p>
+    </details>
+    <details class="faq-item bg-white/70 rounded-xl p-4 shadow-sm border border-[#d8c9a8]">
+      <summary>Can I export or print my SWOT and strategy brief?</summary>
+      <p class="mt-2 leading-relaxed" style="color:#5c5344">Yes. The final step generates a clean one-page strategy brief — your SWOT summary, ranked action list and tier breakdown — with a print-optimized layout. Use your browser's print dialog to save it as a PDF or print it for your team.</p>
+    </details>
+  </div>
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the difference between a SWOT analysis and a TOWS matrix?",
+      "acceptedAnswer": { "@type": "Answer", "text": "A SWOT analysis lists your internal strengths and weaknesses alongside external opportunities and threats. A TOWS matrix pairs those factors to generate strategies: SO (use strengths to capture opportunities), WO (fix weaknesses to seize opportunities), ST (use strengths to defend against threats) and WT (minimize weaknesses and avoid threats). SWOT is the diagnosis; TOWS is the prescription." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is this SWOT analysis template really free? Do I need an account?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Quadra is completely free with unlimited usage and no signup, paywall or watermark. Your board is saved in your own browser's local storage, so your strategic notes never leave your device." }
+    },
+    {
+      "@type": "Question",
+      "name": "How many items should I put in each SWOT quadrant?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Aim for 3 to 8 specific notes per quadrant. Fewer than three and you are probably missing something important; more than ten and the matrix becomes noisy. One concrete idea per sticky note works best." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can you give an example of an SO strategy from a TOWS matrix?",
+      "acceptedAnswer": { "@type": "Answer", "text": "If a bakery's strength is loyal daily regulars and the opportunity is offices reopening nearby, the SO strategy is to use the regulars to capture the office reopening, for example by launching a corporate catering subscription pitched first to regulars who work in those offices." }
+    },
+    {
+      "@type": "Question",
+      "name": "How does the impact x effort prioritization work?",
+      "acceptedAnswer": { "@type": "Answer", "text": "You score each strategy from 1 to 5 on expected impact and required effort. Strategies are ranked by the impact-to-effort ratio and sorted into Quick Wins (do first), Major Projects (plan carefully), Fill-Ins (do when time allows) and Time Sinks (avoid or defer)." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I export or print my SWOT and strategy brief?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. The final step generates a clean one-page strategy brief with your SWOT summary, ranked action list and tier breakdown, with a print-optimized layout you can save as PDF." }
+    }
+  ]
+}
+</script>
+
+<footer class="border-t border-[#d8c9a8] mt-4">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm" style="color:#6b6252">
+    <span><strong style="color:#224E3A">Quadra</strong> — free SWOT &amp; TOWS strategy tools. Your notes stay in your browser.</span>
+    <nav class="flex gap-5 font-semibold">
+      <a href="#top" class="hover:underline">Home</a>
+      <a href="https://fixoraa.tech" class="hover:underline">More Tools</a>
+    </nav>
+  </div>
+</footer>
+
+</div><!-- /screen-root -->
+
+<!-- PRINT-ONLY BRIEF -->
+<aside id="brief-print" class="hidden print:block max-w-3xl mx-auto px-6 py-8" aria-label="Strategy brief"></aside>
+<div id="toast" class="toast no-print" role="status" aria-live="polite"></div>
+
+<script id="quadra-swot-tows-builder-lib">
+/* Quadra SWOT -> TOWS Strategy Builder — core logic (pure functions, no DOM).
+ * Inlined verbatim into quadra-swot-tows-builder.html at build time inside
+ * <script id="quadra-swot-tows-builder-lib">. Tests eval this exact block
+ * from the finished HTML via new Function.
+ */
+'use strict';
+
+var QUADRANTS = ['S', 'W', 'O', 'T'];
+var QUADRANT_NAMES = { S: 'Strengths', W: 'Weaknesses', O: 'Opportunities', T: 'Threats' };
+var QUADRANT_SINGULAR = { S: 'strength', W: 'weakness', O: 'opportunity', T: 'threat' };
+var TOWS_TYPES = ['SO', 'WO', 'ST', 'WT'];
+var TOWS_LABELS = {
+  SO: 'SO Strategies · Maxi-Maxi',
+  WO: 'WO Strategies · Mini-Maxi',
+  ST: 'ST Strategies · Maxi-Mini',
+  WT: 'WT Strategies · Mini-Mini'
+};
+var TOWS_BLURBS = {
+  SO: 'Use internal strengths to capture external opportunities. Your best offensive plays.',
+  WO: 'Overcome internal weaknesses so you can pursue external opportunities.',
+  ST: 'Use internal strengths to avoid or blunt external threats. Your defensive moat.',
+  WT: 'Minimize weaknesses and avoid threats. Survival and damage-control moves.'
+};
+var PAIR_QUESTIONS = {
+  SO: 'Which strength will help you capture this opportunity?',
+  WO: 'Which weakness must you fix first to seize this opportunity?',
+  ST: 'Which strength best shields you against this threat?',
+  WT: 'Which weakness makes this threat the most dangerous?'
+};
+var PAIR_ROWS = { SO: 'O', WO: 'O', ST: 'T', WT: 'T' };
+var PAIR_COLS = { SO: 'S', WO: 'W', ST: 'S', WT: 'W' };
+var MAX_NOTE_LEN = 280;
+var MAX_NOTES_SOFT = 10;
+
+function qtrim(s) {
+  return (s === undefined || s === null) ? '' : String(s).trim();
+}
+
+function qclone(o) {
+  return JSON.parse(JSON.stringify(o));
+}
+
+function isQuadrant(q) {
+  return QUADRANTS.indexOf(q) !== -1;
+}
+
+function emptySwot() {
+  return { S: [], W: [], O: [], T: [] };
+}
+
+function allNotes(swot) {
+  var out = [];
+  QUADRANTS.forEach(function (q) {
+    (swot[q] || []).forEach(function (n) { out.push(n); });
+  });
+  return out;
+}
+
+function nextNoteId(swot) {
+  var max = 0;
+  allNotes(swot).forEach(function (n) {
+    var m = /^n(\d+)$/.exec(n.id || '');
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+  return 'n' + (max + 1);
+}
+
+function findNote(swot, id) {
+  for (var qi = 0; qi < QUADRANTS.length; qi++) {
+    var q = QUADRANTS[qi];
+    var arr = swot[q] || [];
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i].id === id) return { note: arr[i], quadrant: q, index: i };
+    }
+  }
+  return null;
+}
+
+function addNote(swot, text, quadrant) {
+  text = qtrim(text);
+  if (!isQuadrant(quadrant)) return { swot: swot, note: null, error: 'Unknown quadrant.' };
+  if (!text) return { swot: swot, note: null, error: 'Write the note first — empty sticky notes are not allowed.' };
+  if (text.length > MAX_NOTE_LEN) return { swot: swot, note: null, error: 'Keep it under ' + MAX_NOTE_LEN + ' characters — one idea per sticky note.' };
+  var out = qclone(swot);
+  var note = { id: nextNoteId(out), quadrant: quadrant, text: text };
+  out[quadrant].push(note);
+  return { swot: out, note: note, error: null };
+}
+
+function editNote(swot, id, newText) {
+  newText = qtrim(newText);
+  if (!newText) return { swot: swot, error: 'Note text cannot be empty.' };
+  if (newText.length > MAX_NOTE_LEN) return { swot: swot, error: 'Keep it under ' + MAX_NOTE_LEN + ' characters.' };
+  var found = findNote(swot, id);
+  if (!found) return { swot: swot, error: 'Note not found.' };
+  var out = qclone(swot);
+  out[found.quadrant][found.index].text = newText;
+  return { swot: out, error: null };
+}
+
+function deleteNote(swot, id) {
+  var found = findNote(swot, id);
+  if (!found) return { swot: swot, error: 'Note not found.' };
+  var out = qclone(swot);
+  out[found.quadrant].splice(found.index, 1);
+  return { swot: out, error: null };
+}
+
+function moveNote(swot, id, toQuadrant) {
+  if (!isQuadrant(toQuadrant)) return { swot: swot, error: 'Unknown quadrant.' };
+  var found = findNote(swot, id);
+  if (!found) return { swot: swot, error: 'Note not found.' };
+  var out = qclone(swot);
+  var note = out[found.quadrant].splice(found.index, 1)[0];
+  note.quadrant = toQuadrant;
+  out[toQuadrant].push(note);
+  return { swot: out, error: null };
+}
+
+function noteCounts(swot) {
+  var counts = {};
+  QUADRANTS.forEach(function (q) { counts[q] = (swot[q] || []).length; });
+  return counts;
+}
+
+function validateSwot(swot) {
+  var errors = [];
+  var warnings = [];
+  QUADRANTS.forEach(function (q) {
+    var n = (swot[q] || []).length;
+    if (n === 0) errors.push('Add at least one ' + QUADRANT_SINGULAR[q] + ' — the guided worksheet needs every quadrant filled.');
+    else if (n > MAX_NOTES_SOFT) warnings.push(QUADRANT_NAMES[q] + ' has ' + n + ' notes — merge similar ones so the matrix stays focused.');
+  });
+  return { ok: errors.length === 0, errors: errors, warnings: warnings };
+}
+
+function shortText(s, max) {
+  s = qtrim(s);
+  if (s.length <= max) return s;
+  var cut = s.slice(0, max - 1).replace(/\s+\S*$/, '');
+  return (cut || s.slice(0, max - 1)) + '…';
+}
+
+/* ---- Guided TOWS worksheet: prompted pairings ---- */
+
+function pairingPrompts(swot) {
+  var prompts = [];
+  TOWS_TYPES.forEach(function (type) {
+    var rows = swot[PAIR_ROWS[type]] || [];
+    var cols = swot[PAIR_COLS[type]] || [];
+    for (var i = 0; i < rows.length; i++) {
+      prompts.push({
+        id: type + '-' + i,
+        type: type,
+        rowQuadrant: PAIR_ROWS[type],
+        rowId: rows[i].id,
+        rowText: rows[i].text,
+        colQuadrant: PAIR_COLS[type],
+        colOptions: cols.map(function (c) { return { id: c.id, text: c.text }; }),
+        question: PAIR_QUESTIONS[type]
+      });
+    }
+  });
+  return prompts;
+}
+
+/* Keep only answers that still match the current board (ids may have changed). */
+function reconcileAnswers(swot, answers) {
+  var prompts = pairingPrompts(swot);
+  var valid = {};
+  prompts.forEach(function (p) {
+    var ids = {};
+    p.colOptions.forEach(function (o) { ids[o.id] = true; });
+    valid[p.id] = ids;
+  });
+  var seen = {};
+  var out = [];
+  (answers || []).forEach(function (a) {
+    if (!a || !valid[a.promptId] || seen[a.promptId]) return;
+    if (a.chosenId && !valid[a.promptId][a.chosenId]) return;
+    seen[a.promptId] = true;
+    out.push({ promptId: a.promptId, chosenId: a.chosenId || null, detail: qtrim(a.detail || '') });
+  });
+  return out;
+}
+
+function strategySentence(type, colText, rowText) {
+  var a = shortText(colText, 90);
+  var b = shortText(rowText, 90);
+  if (type === 'SO') return 'Use \u201C' + a + '\u201D to capture \u201C' + b + '\u201D.';
+  if (type === 'WO') return 'Fix \u201C' + a + '\u201D so you can seize \u201C' + b + '\u201D.';
+  if (type === 'ST') return 'Deploy \u201C' + a + '\u201D to defend against \u201C' + b + '\u201D.';
+  return 'Address \u201C' + a + '\u201D to reduce exposure to \u201C' + b + '\u201D.';
+}
+
+function generateTows(swot, answers) {
+  var prompts = pairingPrompts(swot);
+  var byId = {};
+  prompts.forEach(function (p) { byId[p.id] = p; });
+  var latest = {};
+  (answers || []).forEach(function (a) {
+    if (a && a.promptId) latest[a.promptId] = a;
+  });
+  var out = { SO: [], WO: [], ST: [], WT: [] };
+  var skipped = 0;
+  var n = 0;
+  Object.keys(latest).forEach(function (pid) {
+    var a = latest[pid];
+    var p = byId[pid];
+    if (!p || !a.chosenId) { skipped++; return; }
+    var col = null;
+    for (var i = 0; i < p.colOptions.length; i++) {
+      if (p.colOptions[i].id === a.chosenId) { col = p.colOptions[i]; break; }
+    }
+    if (!col) { skipped++; return; }
+    n++;
+    out[p.type].push({
+      id: 'stg-' + n,
+      type: p.type,
+      title: strategySentence(p.type, col.text, p.rowText),
+      detail: qtrim(a.detail || ''),
+      rowId: p.rowId,
+      colId: col.id,
+      custom: false
+    });
+  });
+  return { strategies: out, skipped: skipped, total: n };
+}
+
+function nextStrategyId(strategies) {
+  var max = 0;
+  flattenStrategies(strategies).forEach(function (s) {
+    var m = /^(?:stg|custom)-(\d+)$/.exec(s.id || '');
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+  return 'custom-' + (max + 1);
+}
+
+function addCustomStrategy(strategies, type, title, detail) {
+  title = qtrim(title);
+  if (TOWS_TYPES.indexOf(type) === -1) return { strategies: strategies, strategy: null, error: 'Unknown strategy type.' };
+  if (!title) return { strategies: strategies, strategy: null, error: 'Give the strategy a one-line title first.' };
+  if (title.length > 220) return { strategies: strategies, strategy: null, error: 'Keep the title under 220 characters.' };
+  var out = qclone(strategies);
+  var s = { id: nextStrategyId(out), type: type, title: title, detail: qtrim(detail || ''), rowId: null, colId: null, custom: true };
+  out[type].push(s);
+  return { strategies: out, strategy: s, error: null };
+}
+
+function removeStrategy(strategies, id) {
+  var out = qclone(strategies);
+  var removed = false;
+  TOWS_TYPES.forEach(function (t) {
+    out[t] = (out[t] || []).filter(function (s) {
+      if (s.id === id) { removed = true; return false; }
+      return true;
+    });
+  });
+  return { strategies: out, removed: removed };
+}
+
+function flattenStrategies(strategies) {
+  var flat = [];
+  TOWS_TYPES.forEach(function (t) {
+    (strategies[t] || []).forEach(function (s) { flat.push(s); });
+  });
+  return flat;
+}
+
+/* ---- Impact x Effort prioritization ---- */
+
+function clampVote(v) {
+  if (v === undefined || v === null || v === '') return 0;
+  v = parseInt(v, 10);
+  if (isNaN(v) || v <= 0) return 0;
+  return Math.max(1, Math.min(5, v));
+}
+
+function scoreStrategy(impact, effort) {
+  impact = clampVote(impact);
+  effort = clampVote(effort);
+  if (!impact || !effort) return 0;
+  return Math.round((impact / effort) * 100) / 100;
+}
+
+function strategyTier(impact, effort) {
+  impact = clampVote(impact);
+  effort = clampVote(effort);
+  if (!impact || !effort) return { key: 'unvoted', label: 'Not voted yet', blurb: 'Give this strategy an impact and an effort vote to rank it.' };
+  if (impact >= 4 && effort <= 2) return { key: 'quick', label: 'Quick Win', blurb: 'High impact, low effort — do this first.' };
+  if (impact >= 4) return { key: 'major', label: 'Major Project', blurb: 'High impact, high effort — plan it carefully.' };
+  if (effort <= 2) return { key: 'fillin', label: 'Fill-In', blurb: 'Low effort — tackle it when you have spare time.' };
+  return { key: 'sink', label: 'Time Sink', blurb: 'Low impact, high effort — avoid or defer.' };
+}
+
+function matrixCell(impact, effort) {
+  impact = clampVote(impact);
+  effort = clampVote(effort);
+  if (!impact || !effort) return null;
+  return { x: effort, y: impact };
+}
+
+function rankStrategies(strategies, votes) {
+  var ranked = strategies.map(function (s) {
+    var v = (votes || {})[s.id] || {};
+    var impact = clampVote(v.impact);
+    var effort = clampVote(v.effort);
+    var tier = strategyTier(impact, effort);
+    return {
+      id: s.id, type: s.type, title: s.title, detail: s.detail || '',
+      impact: impact, effort: effort,
+      score: scoreStrategy(impact, effort),
+      tierKey: tier.key, tierLabel: tier.label, tierBlurb: tier.blurb
+    };
+  });
+  ranked.sort(function (a, b) {
+    if (b.score !== a.score) return b.score - a.score;
+    if (b.impact !== a.impact) return b.impact - a.impact;
+    if (a.effort !== b.effort) return a.effort - b.effort;
+    return a.title < b.title ? -1 : (a.title > b.title ? 1 : 0);
+  });
+  ranked.forEach(function (r, i) { r.rank = i + 1; });
+  return ranked;
+}
+
+/* ---- One-page strategy brief ---- */
+
+function buildBrief(swot, ranked) {
+  var voted = ranked.filter(function (r) { return r.score > 0; });
+  var byTier = {};
+  voted.forEach(function (r) {
+    (byTier[r.tierKey] = byTier[r.tierKey] || []).push(r);
+  });
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    counts: noteCounts(swot),
+    swot: qclone(swot),
+    totalStrategies: ranked.length,
+    votedStrategies: voted.length,
+    topActions: voted.slice(0, 5),
+    byTier: byTier,
+    ranked: qclone(ranked)
+  };
+}
+
+/* ---- Starter presets ---- */
+
+function presetList() {
+  return [
+    { key: 'coffee-shop', label: 'Coffee shop example' },
+    { key: 'freelancer', label: 'Freelancer example' }
+  ];
+}
+
+function presetSwot(key) {
+  var data = {
+    'coffee-shop': {
+      S: ['Loyal regulars who visit daily', 'Prime corner location near offices', 'In-house roasted single-origin beans'],
+      W: ['No online ordering system', 'Small team, slow at peak hours', 'Limited seating (18 covers)'],
+      O: ['Offices reopening hybrid work nearby', 'Growing demand for subscription coffee', 'Empty unit next door available to lease'],
+      T: ['Chain cafe opening across the street', 'Coffee bean prices up 30% this year', 'Delivery apps taking a 25% cut']
+    },
+    'freelancer': {
+      S: ['10 years of UX portfolio pieces', 'Retainer clients paying on time', 'Fast turnaround reputation'],
+      W: ['No pipeline beyond 2 months', 'Weak at self-promotion', 'Single income stream (client work)'],
+      O: ['AI tooling lets one person ship faster', 'Startups hiring fractional designers', 'Online course platforms need instructors'],
+      T: ['Clients cutting freelance budgets', 'Template marketplaces commoditizing design', 'Late payments from one big client']
+    }
+  };
+  var pick = data[key];
+  if (!pick) return { swot: emptySwot(), error: 'Unknown preset.' };
+  var swot = emptySwot();
+  QUADRANTS.forEach(function (q) {
+    (pick[q] || []).forEach(function (text) {
+      var r = addNote(swot, text, q);
+      swot = r.swot;
+    });
+  });
+  return { swot: swot, error: null };
+}
+
+/* ---- State persistence helpers ---- */
+
+function defaultState() {
+  return { swot: emptySwot(), answers: [], custom: { SO: [], WO: [], ST: [], WT: [] }, votes: {}, step: 1 };
+}
+
+function serializeState(state) {
+  return JSON.stringify(state);
+}
+
+function cleanNote(n, quadrant) {
+  if (!n || typeof n.text !== 'string') return null;
+  return { id: String(n.id || ''), quadrant: quadrant, text: String(n.text).slice(0, MAX_NOTE_LEN) };
+}
+
+function parseState(json) {
+  try {
+    var s = JSON.parse(json);
+    if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error('bad shape');
+    var st = defaultState();
+    if (s.swot && typeof s.swot === 'object') {
+      QUADRANTS.forEach(function (q) {
+        if (Array.isArray(s.swot[q])) {
+          st.swot[q] = s.swot[q].map(function (n) { return cleanNote(n, q); }).filter(Boolean);
+        }
+      });
+    }
+    if (Array.isArray(s.answers)) {
+      st.answers = s.answers.filter(function (a) {
+        return a && typeof a.promptId === 'string';
+      }).map(function (a) {
+        return { promptId: a.promptId, chosenId: typeof a.chosenId === 'string' ? a.chosenId : null, detail: qtrim(a.detail || '') };
+      });
+    }
+    if (s.custom && typeof s.custom === 'object') {
+      TOWS_TYPES.forEach(function (t) {
+        if (Array.isArray(s.custom[t])) {
+          st.custom[t] = s.custom[t].filter(function (c) {
+            return c && typeof c.title === 'string' && qtrim(c.title);
+          }).map(function (c) {
+            return { id: String(c.id || ''), type: t, title: String(c.title).slice(0, 220), detail: qtrim(c.detail || ''), rowId: null, colId: null, custom: true };
+          });
+        }
+      });
+    }
+    if (s.votes && typeof s.votes === 'object' && !Array.isArray(s.votes)) {
+      Object.keys(s.votes).forEach(function (k) {
+        var v = s.votes[k];
+        if (v && typeof v === 'object') st.votes[k] = { impact: clampVote(v.impact), effort: clampVote(v.effort) };
+      });
+    }
+    if (s.step >= 1 && s.step <= 5) st.step = s.step;
+    st.answers = reconcileAnswers(st.swot, st.answers);
+    return { state: st, error: null };
+  } catch (e) {
+    return { state: defaultState(), error: 'Saved data was corrupted — starting with a fresh board.' };
+  }
+}
+
+function escHtml(s) {
+  return qtrim(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+</script>
+<script>
+/* Quadra UI wiring — DOM + localStorage live here; pure logic lives in the lib above. */
+(function () {
+  'use strict';
+
+  var LS_KEY = 'quadra-swot-v1';
+  var state = defaultState();
+  var wizIndex = 0;
+  var wizChoice = null; // draft chosenId for current prompt
+  var wizDetailDraft = ''; // unsaved detail text for current prompt
+  var editingNoteId = null;
+  var customFormFor = null; // TOWS type with open "add custom" form
+
+  var STEP_LABELS = { 1: 'Board', 2: 'Worksheet', 3: 'TOWS Matrix', 4: 'Prioritize', 5: 'Brief' };
+
+  var QUAD_UI = {
+    S: { name: 'Strengths', sub: 'Internal · helpful', icon: '💪', note: '#DFF0D8', chip: '#2F6B4F' },
+    W: { name: 'Weaknesses', sub: 'Internal · harmful', icon: '🩹', note: '#F6D9D9', chip: '#B3402E' },
+    O: { name: 'Opportunities', sub: 'External · helpful', icon: '🚀', note: '#D6E7FA', chip: '#2B5FA6' },
+    T: { name: 'Threats', sub: 'External · harmful', icon: '⛈️', note: '#EADCF0', chip: '#6D3B8E' }
+  };
+  var TYPE_UI = {
+    SO: { color: '#2F6B4F' }, WO: { color: '#2B5FA6' }, ST: { color: '#B7791F' }, WT: { color: '#B3402E' }
+  };
+  var QUAD_SINGULAR_UI = { S: 'strength', W: 'weakness', O: 'opportunity', T: 'threat' };
+
+  function $(id) { return document.getElementById(id); }
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+  function save() {
+    try { localStorage.setItem(LS_KEY, serializeState(state)); } catch (e) { /* private mode */ }
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        var r = parseState(raw);
+        state = r.state;
+        if (r.error) toast(r.error);
+      }
+    } catch (e) { /* ignore */ }
+  }
+  function rotFor(id) {
+    var h = 0;
+    for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 997;
+    return ((h % 7) - 3) * 0.7; // -2.1deg .. +2.1deg
+  }
+  function scrollToTool() {
+    var el = $('tool');
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ---------- derived data ---------- */
+
+  function mergedStrategies() {
+    var gen = generateTows(state.swot, state.answers).strategies;
+    var out = { SO: [], WO: [], ST: [], WT: [] };
+    TOWS_TYPES.forEach(function (t) { out[t] = gen[t].concat(state.custom[t] || []); });
+    return out;
+  }
+  function flatRanked() {
+    return rankStrategies(flattenStrategies(mergedStrategies()), state.votes);
+  }
+
+  /* ---------- step navigation ---------- */
+
+  function goStep(n) {
+    if (n === 2) {
+      var v = validateSwot(state.swot);
+      if (!v.ok) { toast(v.errors[0]); n = 1; }
+      else {
+        state.answers = reconcileAnswers(state.swot, state.answers);
+        wizIndex = 0; wizChoice = null; wizDetailDraft = '';
+        if (v.warnings.length) toast(v.warnings[0]);
+      }
+    }
+    if (n < 1) n = 1;
+    if (n > 5) n = 5;
+    state.step = n;
+    save();
+    renderAll();
+    scrollToTool();
+  }
+
+  function renderNav() {
+    var nav = $('step-nav');
+    var html = '';
+    [1, 2, 3, 4, 5].forEach(function (n) {
+      var cls = 'step-pill border-2 font-bold text-sm px-4 py-2 rounded-full bg-white/60';
+      if (n === state.step) cls += ' active';
+      else if (n < state.step) cls += ' done';
+      else cls += ' border-[#c9b98f]';
+      html += '<button class="' + cls + '" data-nav="' + n + '">' + n + '. ' + STEP_LABELS[n] + '</button>';
+    });
+    nav.innerHTML = html;
+  }
+
+  /* ---------- step 1: corkboard ---------- */
+
+  function noteHtml(note, q) {
+    var ui = QUAD_UI[q];
+    if (editingNoteId === note.id) {
+      return '<div class="sticky-note p-3 pt-5" style="--rot:' + rotFor(note.id) + 'deg;background:' + ui.note + '">' +
+        '<span class="pin" aria-hidden="true"></span>' +
+        '<textarea data-edit-text class="font-hand w-full text-xl leading-snug bg-transparent outline-none resize-y" rows="3" maxlength="280">' + escHtml(note.text) + '</textarea>' +
+        '<div class="flex gap-2 mt-2">' +
+        '<button data-act="save-edit" data-id="' + note.id + '" class="text-xs font-bold px-3 py-1.5 rounded-full text-white" style="background:#2F6B4F">Save</button>' +
+        '<button data-act="cancel-edit" class="text-xs font-bold px-3 py-1.5 rounded-full bg-white/70">Cancel</button>' +
+        '</div></div>';
+    }
+    return '<div class="sticky-note p-3 pt-5" draggable="true" data-note-id="' + note.id + '" style="--rot:' + rotFor(note.id) + 'deg;background:' + ui.note + '">' +
+      '<span class="pin" aria-hidden="true"></span>' +
+      '<p class="font-hand text-xl leading-snug pr-1">' + escHtml(note.text) + '</p>' +
+      '<div class="flex items-center gap-1.5 mt-2">' +
+      '<button data-act="edit" data-id="' + note.id + '" title="Edit note" class="text-xs font-bold px-2 py-1 rounded bg-white/60 hover:bg-white">✎</button>' +
+      '<select data-act="move" data-id="' + note.id + '" title="Move to quadrant" class="text-xs font-bold px-1 py-1 rounded bg-white/60 max-w-[5.5rem]">' +
+      QUADRANTS.map(function (qq) {
+        return '<option value="' + qq + '"' + (qq === q ? ' selected' : '') + '>' + QUAD_UI[qq].name + '</option>';
+      }).join('') +
+      '</select>' +
+      '<button data-act="del" data-id="' + note.id + '" title="Delete note" class="text-xs font-bold px-2 py-1 rounded bg-white/60 hover:bg-red-100 ml-auto">✕</button>' +
+      '</div></div>';
+  }
+
+  function renderBoard() {
+    var v = validateSwot(state.swot);
+    var html = '<div class="flex flex-wrap items-center justify-between gap-3 mb-5">' +
+      '<div><h2 class="text-2xl font-extrabold" style="color:#224E3A">📌 Your SWOT war room</h2>' +
+      '<p class="text-sm mt-1" style="color:#6b6252">Add one idea per sticky note. Drag notes to rearrange — or use the dropdown to move them between quadrants. Everything saves automatically.</p></div>' +
+      '<div class="flex gap-2">' +
+      '<select id="preset-sel" class="text-sm font-semibold px-3 py-2 rounded-lg border-2 border-[#c9b98f] bg-white/70">' +
+      '<option value="">Load an example…</option>' +
+      presetList().map(function (p) { return '<option value="' + p.key + '">' + escHtml(p.label) + '</option>'; }).join('') +
+      '</select>' +
+      '<button data-act="clear" class="text-sm font-bold px-4 py-2 rounded-lg border-2 border-[#c9b98f] bg-white/70 hover:bg-red-50">Clear board</button>' +
+      '</div></div>';
+
+    if (v.errors.length) {
+      html += '<div class="mb-5 p-4 rounded-xl border-2 border-dashed" style="border-color:#B3402E;background:#FBF1EC">' +
+        '<p class="font-bold text-sm" style="color:#B3402E">To unlock the guided worksheet, fill every quadrant:</p>' +
+        '<ul class="text-sm mt-1 list-disc ml-5" style="color:#7a4a3a">' +
+        v.errors.map(function (e) { return '<li>' + escHtml(e) + '</li>'; }).join('') + '</ul></div>';
+    } else if (v.warnings.length) {
+      html += '<div class="mb-5 p-3 rounded-xl text-sm font-semibold" style="background:#FFF6E0;color:#7a5b17">' + escHtml(v.warnings[0]) + '</div>';
+    }
+
+    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
+    QUADRANTS.forEach(function (q) {
+      var ui = QUAD_UI[q];
+      var notes = state.swot[q] || [];
+      html += '<div class="cork-panel p-3 sm:p-4">' +
+        '<div class="quad-head flex items-center justify-between pb-2 mb-3 px-1">' +
+        '<div><span class="text-xl mr-1">' + ui.icon + '</span>' +
+        '<span class="font-extrabold text-lg">' + ui.name + '</span> ' +
+        '<span class="text-xs font-bold px-2 py-0.5 rounded-full text-white align-middle" style="background:' + ui.chip + '">' + notes.length + '</span>' +
+        '<div class="text-xs font-semibold" style="color:#6b6252">' + ui.sub + '</div></div></div>' +
+        '<div class="flex gap-2 mb-3 px-1">' +
+        '<input data-add-input="' + q + '" maxlength="280" placeholder="New ' + QUAD_SINGULAR_UI[q] + '…" ' +
+        'class="flex-1 min-w-0 text-sm px-3 py-2 rounded-lg border-2 border-[#c9b98f] bg-[#FFFDF6] focus:outline-none focus:border-[#2F6B4F]">' +
+        '<button data-act="add" data-q="' + q + '" class="font-bold text-sm px-4 py-2 rounded-lg text-white shrink-0" style="background:#2F6B4F">＋ Pin</button>' +
+        '</div>' +
+        '<div data-drop="' + q + '" class="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 min-h-[90px] p-1 rounded-lg">' +
+        (notes.length ? notes.map(function (n) { return noteHtml(n, q); }).join('') :
+          '<p class="text-sm italic col-span-full text-center py-6" style="color:#8a7c63">No notes yet — pin your first ' + QUAD_SINGULAR_UI[q] + ' above, or drag one here.</p>') +
+        '</div></div>';
+    });
+    html += '</div>';
+
+    html += '<div class="text-center mt-8">' +
+      '<button data-act="to-worksheet" class="font-extrabold text-lg px-8 py-3.5 rounded-2xl text-white shadow-lg" style="background:linear-gradient(120deg,#2F6B4F,#3d8a61)">Start the guided TOWS worksheet →</button>' +
+      '<p class="text-xs mt-2" style="color:#8a7c63">Turns your notes into SO / WO / ST / WT strategies, one prompt at a time.</p></div>';
+
+    $('step-board').innerHTML = html;
+  }
+
+  /* ---------- step 2: guided worksheet ---------- */
+
+  function currentAnswer(promptId) {
+    for (var i = 0; i < state.answers.length; i++) {
+      if (state.answers[i].promptId === promptId) return state.answers[i];
+    }
+    return null;
+  }
+
+  function saveAnswer(promptId, chosenId, detail) {
+    var found = false;
+    state.answers = state.answers.map(function (a) {
+      if (a.promptId === promptId) { found = true; return { promptId: promptId, chosenId: chosenId, detail: detail }; }
+      return a;
+    });
+    if (!found) state.answers.push({ promptId: promptId, chosenId: chosenId, detail: detail });
+    save();
+  }
+
+  function renderWorksheet() {
+    var prompts = pairingPrompts(state.swot);
+    var html = '<div class="max-w-2xl mx-auto">';
+    html += '<h2 class="text-2xl font-extrabold text-center" style="color:#224E3A">🧭 Guided TOWS worksheet</h2>' +
+      '<p class="text-sm text-center mt-1 mb-6" style="color:#6b6252">Answer each pairing prompt — Quadra turns your answers into strategies. Skip any pairing that doesn\'t fit.</p>';
+
+    if (!prompts.length) {
+      html += '<div class="text-center p-8 rounded-2xl bg-white/60 border-2 border-dashed border-[#c9b98f]">' +
+        '<p class="font-bold">Your board is empty.</p>' +
+        '<button data-act="back-board" class="mt-4 font-bold px-6 py-2.5 rounded-xl text-white" style="background:#2F6B4F">← Back to the board</button></div>';
+      $('step-worksheet').innerHTML = html + '</div>';
+      return;
+    }
+
+    if (wizIndex >= prompts.length) {
+      var answered = state.answers.filter(function (a) { return a.chosenId; }).length;
+      html += '<div class="text-center p-8 rounded-2xl bg-white/70 border-2 border-[#2F6B4F] shadow">' +
+        '<p class="text-5xl mb-3">🎯</p>' +
+        '<p class="text-xl font-extrabold" style="color:#224E3A">Worksheet complete!</p>' +
+        '<p class="mt-2" style="color:#6b6252">You paired <strong>' + answered + '</strong> of ' + prompts.length + ' prompts into strategies.</p>' +
+        '<div class="flex flex-wrap justify-center gap-3 mt-6">' +
+        '<button data-act="wiz-restart" class="font-bold px-6 py-2.5 rounded-xl border-2 border-[#2F6B4F]" style="color:#2F6B4F">Review answers</button>' +
+        '<button data-act="to-matrix" class="font-extrabold px-8 py-2.5 rounded-xl text-white shadow" style="background:linear-gradient(120deg,#2F6B4F,#3d8a61)">See my TOWS matrix →</button>' +
+        '</div></div>';
+      $('step-worksheet').innerHTML = html + '</div>';
+      return;
+    }
+
+    var p = prompts[wizIndex];
+    var prev = currentAnswer(p.id);
+    var draftChoice = wizChoice !== null ? wizChoice : (prev ? prev.chosenId : null);
+    var draftDetail = wizDetailDraft || (prev ? prev.detail : '');
+    var typeColor = TYPE_UI[p.type].color;
+    var pct = Math.round((wizIndex / prompts.length) * 100);
+
+    html += '<div class="mb-4"><div class="flex justify-between text-xs font-bold mb-1" style="color:#6b6252">' +
+      '<span>Question ' + (wizIndex + 1) + ' of ' + prompts.length + '</span><span>' + pct + '%</span></div>' +
+      '<div class="h-2.5 rounded-full bg-[#e0d5ba]"><div class="h-2.5 rounded-full transition-all" style="width:' + pct + '%;background:linear-gradient(90deg,#2F6B4F,#E9B44C)"></div></div></div>';
+
+    html += '<div class="rounded-2xl bg-white/80 border-2 p-5 sm:p-7 shadow" style="border-color:' + typeColor + '">' +
+      '<span class="inline-block text-xs font-extrabold px-3 py-1 rounded-full text-white mb-3" style="background:' + typeColor + '">' + p.type + ' · ' + TOWS_LABELS[p.type].split('·')[1].trim() + '</span>' +
+      '<div class="rounded-xl p-4 mb-4 border-l-4 font-hand text-2xl leading-snug" style="background:#FFFDF6;border-color:' + typeColor + '">' +
+      '<span class="font-sans text-xs font-bold uppercase tracking-wide block mb-1" style="color:#8a7c63">' + QUADRANT_NAMES[p.rowQuadrant] + '</span>' +
+      '“' + escHtml(p.rowText) + '”</div>' +
+      '<p class="font-bold text-lg mb-3">' + escHtml(p.question) + '</p>' +
+      '<div class="space-y-2 max-h-64 overflow-y-auto pr-1">' +
+      p.colOptions.map(function (o) {
+        var sel = draftChoice === o.id ? ' selected' : '';
+        return '<button data-act="wiz-pick" data-id="' + o.id + '" class="opt-card' + sel + ' w-full text-left text-sm font-semibold px-4 py-2.5 rounded-xl border-2 border-[#e0d5ba] bg-[#FFFDF6]">' +
+          '<span class="font-hand text-xl">' + escHtml(o.text) + '</span></button>';
+      }).join('') + '</div>' +
+      '<label class="block text-xs font-bold mt-4 mb-1" style="color:#6b6252">HOW, EXACTLY? (optional — one concrete line)</label>' +
+      '<textarea id="wiz-detail" rows="2" maxlength="220" placeholder="e.g. Launch a pilot with 5 regulars next month…"' +
+      ' class="w-full text-sm px-3 py-2 rounded-lg border-2 border-[#e0d5ba] bg-[#FFFDF6] focus:outline-none focus:border-[#2F6B4F]">' + escHtml(draftDetail) + '</textarea>' +
+      '<div class="flex flex-wrap gap-2 mt-5">' +
+      (wizIndex > 0 ? '<button data-act="wiz-back" class="font-bold px-5 py-2.5 rounded-xl border-2 border-[#c9b98f] bg-white/70">← Back</button>' : '') +
+      '<button data-act="wiz-skip" class="font-bold px-5 py-2.5 rounded-xl border-2 border-[#c9b98f] bg-white/70 ml-auto">Skip →</button>' +
+      '<button data-act="wiz-next" class="font-extrabold px-6 py-2.5 rounded-xl text-white" style="background:#2F6B4F">' +
+      (wizIndex === prompts.length - 1 ? 'Finish ✓' : 'Save & next →') + '</button>' +
+      '</div></div>';
+
+    html += '<div class="text-center mt-4"><button data-act="back-board" class="text-sm font-bold underline" style="color:#6b6252">← Back to the board</button></div>';
+    $('step-worksheet').innerHTML = html + '</div>';
+    wizChoice = draftChoice;
+  }
+
+  /* ---------- step 3: TOWS matrix ---------- */
+
+  function strategyCard(s) {
+    var c = TYPE_UI[s.type].color;
+    return '<div class="rounded-xl bg-[#FFFDF6] border p-3.5 shadow-sm" style="border-color:#e0d5ba">' +
+      '<p class="font-bold text-[0.95rem] leading-snug">' + escHtml(s.title) + '</p>' +
+      (s.detail ? '<p class="text-sm mt-1.5 italic" style="color:#6b6252">How: ' + escHtml(s.detail) + '</p>' : '') +
+      '<div class="flex items-center gap-2 mt-2">' +
+      (s.custom ? '<span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#E9B44C] text-[#3A2E12]">CUSTOM</span>' : '<span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white" style="background:' + c + '">GUIDED</span>') +
+      '<button data-act="del-strategy" data-id="' + s.id + '" class="text-xs font-bold px-2 py-0.5 rounded bg-red-50 hover:bg-red-100 ml-auto" style="color:#B3402E">Remove</button>' +
+      '</div></div>';
+  }
+
+  function renderMatrix() {
+    var merged = mergedStrategies();
+    var total = flattenStrategies(merged).length;
+    var html = '<div class="text-center mb-6"><h2 class="text-2xl font-extrabold" style="color:#224E3A">⚔️ Your TOWS matrix</h2>' +
+      '<p class="text-sm mt-1" style="color:#6b6252">' + total + ' strateg' + (total === 1 ? 'y' : 'ies') + ' generated. Add your own where the worksheet missed something.</p></div>';
+
+    if (!total) {
+      html += '<div class="max-w-xl mx-auto text-center p-8 rounded-2xl bg-white/60 border-2 border-dashed border-[#c9b98f]">' +
+        '<p class="font-bold text-lg">No strategies yet.</p>' +
+        '<p class="text-sm mt-1" style="color:#6b6252">Run the guided worksheet, or add custom strategies below.</p>' +
+        '<button data-act="to-worksheet2" class="mt-4 font-bold px-6 py-2.5 rounded-xl text-white" style="background:#2F6B4F">Open the worksheet →</button></div>';
+    }
+
+    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-5">';
+    TOWS_TYPES.forEach(function (t) {
+      var c = TYPE_UI[t].color;
+      var list = merged[t];
+      html += '<div class="rounded-2xl border-2 bg-white/60 p-4" style="border-color:' + c + '">' +
+        '<div class="flex items-center gap-2 mb-1"><span class="text-xs font-extrabold px-2.5 py-1 rounded-full text-white" style="background:' + c + '">' + t + '</span>' +
+        '<span class="font-extrabold">' + escHtml(TOWS_LABELS[t]) + '</span></div>' +
+        '<p class="text-xs mb-3" style="color:#6b6252">' + escHtml(TOWS_BLURBS[t]) + '</p>' +
+        '<div class="space-y-2.5">' +
+        (list.length ? list.map(strategyCard).join('') : '<p class="text-sm italic py-3 text-center" style="color:#8a7c63">Nothing here yet.</p>') +
+        '</div>';
+      if (customFormFor === t) {
+        html += '<div class="mt-3 p-3 rounded-xl bg-[#FFFDF6] border-2 border-dashed border-[#c9b98f]">' +
+          '<input id="custom-title" maxlength="220" placeholder="Strategy in one line… (max 220 chars)" class="w-full text-sm px-3 py-2 rounded-lg border-2 border-[#e0d5ba] focus:outline-none focus:border-[#2F6B4F]">' +
+          '<textarea id="custom-detail" rows="2" maxlength="220" placeholder="How, exactly? (optional)" class="w-full text-sm px-3 py-2 mt-2 rounded-lg border-2 border-[#e0d5ba] focus:outline-none focus:border-[#2F6B4F]"></textarea>' +
+          '<div class="flex gap-2 mt-2"><button data-act="custom-save" data-t="' + t + '" class="text-sm font-bold px-4 py-1.5 rounded-lg text-white" style="background:#2F6B4F">Add strategy</button>' +
+          '<button data-act="custom-cancel" class="text-sm font-bold px-4 py-1.5 rounded-lg bg-white/70 border border-[#c9b98f]">Cancel</button></div></div>';
+      } else {
+        html += '<button data-act="custom-open" data-t="' + t + '" class="mt-3 text-sm font-bold px-4 py-2 rounded-xl border-2 border-dashed border-[#c9b98f] hover:border-[#2F6B4F] w-full" style="color:#2F6B4F">＋ Add your own ' + t + ' strategy</button>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="text-center mt-8"><button data-act="to-prioritize" class="font-extrabold text-lg px-8 py-3.5 rounded-2xl text-white shadow-lg" style="background:linear-gradient(120deg,#2F6B4F,#3d8a61)">Prioritize by impact × effort →</button></div>';
+    $('step-matrix').innerHTML = html;
+  }
+
+  /* ---------- step 4: prioritize ---------- */
+
+  var TIER_CLS = { quick: 'tier-quick', major: 'tier-major', fillin: 'tier-fillin', sink: 'tier-sink', unvoted: 'tier-unvoted' };
+
+  function renderPrioritize() {
+    var merged = mergedStrategies();
+    var flat = flattenStrategies(merged);
+    var ranked = flatRanked();
+    var html = '<div class="text-center mb-6"><h2 class="text-2xl font-extrabold" style="color:#224E3A">🎯 Impact × effort voting</h2>' +
+      '<p class="text-sm mt-1 max-w-xl mx-auto" style="color:#6b6252">Score each strategy 1–5 on impact and effort. Quadra ranks them by impact ÷ effort and plots your 2×2 matrix.</p></div>';
+
+    if (!flat.length) {
+      html += '<div class="max-w-xl mx-auto text-center p-8 rounded-2xl bg-white/60 border-2 border-dashed border-[#c9b98f]">' +
+        '<p class="font-bold">Nothing to rank yet.</p>' +
+        '<button data-act="to-matrix2" class="mt-4 font-bold px-6 py-2.5 rounded-xl text-white" style="background:#2F6B4F">← Back to the matrix</button></div>';
+      $('step-prioritize').innerHTML = html;
+      return;
+    }
+
+    html += '<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">';
+    html += '<div class="lg:col-span-3 space-y-3">';
+    flat.forEach(function (s) {
+      var v = state.votes[s.id] || {};
+      var impact = v.impact || 3, effort = v.effort || 3;
+      var voted = !!(v.impact && v.effort);
+      var t = voted ? strategyTier(impact, effort) : { key: 'unvoted', label: 'Move the sliders to vote' };
+      html += '<div class="rounded-xl bg-white/75 border border-[#e0d5ba] p-4 shadow-sm">' +
+        '<div class="flex items-start gap-2"><span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white mt-0.5 shrink-0" style="background:' + TYPE_UI[s.type].color + '">' + s.type + '</span>' +
+        '<p class="font-bold text-sm leading-snug flex-1">' + escHtml(s.title) + '</p>' +
+        '<span class="text-[10px] font-extrabold px-2 py-1 rounded-full whitespace-nowrap ' + TIER_CLS[t.key] + '">' + escHtml(t.label).toUpperCase() + '</span></div>' +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">' +
+        '<label class="text-xs font-bold" style="color:#6b6252">IMPACT <span data-iv="' + s.id + '" class="text-sm" style="color:#2F6B4F">' + impact + '</span>/5' +
+        '<input type="range" min="1" max="5" step="1" value="' + impact + '" data-vote="impact" data-id="' + s.id + '" class="w-full"></label>' +
+        '<label class="text-xs font-bold" style="color:#6b6252">EFFORT <span data-ev="' + s.id + '" class="text-sm" style="color:#B7791F">' + effort + '</span>/5' +
+        '<input type="range" min="1" max="5" step="1" value="' + effort + '" data-vote="effort" data-id="' + s.id + '" class="w-full"></label>' +
+        '</div></div>';
+    });
+    html += '</div>';
+
+    // 2x2 matrix plot + ranked list
+    var dots = ranked.filter(function (r) { return r.score > 0; });
+    html += '<div class="lg:col-span-2 space-y-5">';
+    html += '<div class="rounded-2xl bg-white/75 border border-[#e0d5ba] p-4"><p class="font-extrabold text-sm mb-2">2×2 matrix</p>' +
+      '<div class="relative w-full aspect-square rounded-xl border-2 border-[#c9b98f] overflow-hidden" style="background:linear-gradient(to top right,#f3ecd9 0 50%,#e4f0e6 50% 100%)">' +
+      '<div class="absolute inset-y-0 left-1/2 w-0.5 bg-[#c9b98f]"></div><div class="absolute inset-x-0 top-1/2 h-0.5 bg-[#c9b98f]"></div>' +
+      '<span class="absolute top-1 left-2 text-[10px] font-extrabold" style="color:#2F6B4F">QUICK WINS</span>' +
+      '<span class="absolute top-1 right-2 text-[10px] font-extrabold" style="color:#2B5FA6">MAJOR PROJECTS</span>' +
+      '<span class="absolute bottom-1 left-2 text-[10px] font-extrabold" style="color:#B7791F">FILL-INS</span>' +
+      '<span class="absolute bottom-1 right-2 text-[10px] font-extrabold" style="color:#9CA3AF">TIME SINKS</span>' +
+      '<span class="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-bold" style="color:#8a7c63">effort →</span>' +
+      '<span class="absolute top-1/2 left-1 -translate-y-1/2 text-[10px] font-bold" style="color:#8a7c63;writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg)">← impact</span>' +
+      dots.map(function (r, i) {
+        var left = ((r.effort - 1) / 4) * 88 + 6;
+        var bottom = ((r.impact - 1) / 4) * 82 + 9;
+        return '<span title="#' + r.rank + ' ' + escHtml(r.title) + '" class="absolute w-6 h-6 rounded-full text-[10px] font-extrabold text-white flex items-center justify-center shadow" ' +
+          'style="left:' + left + '%;bottom:' + bottom + '%;background:' + TYPE_UI[r.type].color + ';transform:translate(-50%,50%)">' + r.rank + '</span>';
+      }).join('') +
+      (dots.length ? '' : '<p class="absolute inset-0 flex items-center justify-center text-xs italic px-8 text-center" style="color:#8a7c63">Move the sliders — your strategies will plot here.</p>') +
+      '</div></div>';
+
+    html += '<div class="rounded-2xl bg-white/75 border border-[#e0d5ba] p-4"><p class="font-extrabold text-sm mb-2">🏆 Ranked action list</p>';
+    if (!dots.length) {
+      html += '<p class="text-sm italic" style="color:#8a7c63">Vote on at least one strategy to see the ranking.</p>';
+    } else {
+      html += '<ol class="space-y-2">' + dots.map(function (r) {
+        return '<li class="flex items-start gap-2 text-sm"><span class="font-extrabold shrink-0 w-6 h-6 rounded-full text-white text-xs flex items-center justify-center" style="background:#2F6B4F">' + r.rank + '</span>' +
+          '<div class="flex-1"><p class="font-semibold leading-snug">' + escHtml(r.title) + '</p>' +
+          '<p class="text-xs mt-0.5" style="color:#6b6252"><span class="font-extrabold px-1.5 py-0.5 rounded text-[10px] ' + TIER_CLS[r.tierKey] + '">' + escHtml(r.tierLabel).toUpperCase() + '</span> · score ' + r.score + ' · impact ' + r.impact + ' / effort ' + r.effort + '</p></div></li>';
+      }).join('') + '</ol>';
+    }
+    html += '</div></div></div>';
+
+    html += '<div class="text-center mt-8"><button data-act="to-brief" class="font-extrabold text-lg px-8 py-3.5 rounded-2xl text-white shadow-lg" style="background:linear-gradient(120deg,#2F6B4F,#3d8a61)">Generate my one-page brief →</button></div>';
+    $('step-prioritize').innerHTML = html;
+  }
+
+  /* ---------- step 5: brief ---------- */
+
+  function briefInner(b, forPrint) {
+    var h = '<div style="font-family:Georgia,serif;color:#1f1b16">';
+    h += '<div style="border-bottom:4px solid #2F6B4F;padding-bottom:12px;margin-bottom:16px">' +
+      '<p style="font-size:12px;letter-spacing:2px;color:#6b6252;margin:0">QUADRA STRATEGY BRIEF</p>' +
+      '<h1 style="font-size:28px;margin:4px 0">SWOT → TOWS Action Plan</h1>' +
+      '<p style="font-size:13px;color:#6b6252;margin:0">Prepared ' + escHtml(b.date) + ' · ' + b.totalStrategies + ' strategies · ' + b.votedStrategies + ' prioritized</p></div>';
+
+    h += '<h2 style="font-size:17px;color:#224E3A;margin:14px 0 8px">SWOT snapshot</h2>';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+    QUADRANTS.forEach(function (q) {
+      h += '<tr><td style="border:1px solid #d8c9a8;padding:8px;font-weight:bold;background:#f6f0dd;width:110px;vertical-align:top">' +
+        QUADRANT_NAMES[q] + ' (' + b.counts[q] + ')</td><td style="border:1px solid #d8c9a8;padding:8px;vertical-align:top">' +
+        (b.swot[q].length ? '<ul style="margin:0;padding-left:18px">' + b.swot[q].map(function (n) { return '<li>' + escHtml(n.text) + '</li>'; }).join('') + '</ul>' : '<em>—</em>') +
+        '</td></tr>';
+    });
+    h += '</table>';
+
+    h += '<h2 style="font-size:17px;color:#224E3A;margin:16px 0 8px">Top 5 actions</h2>';
+    if (b.topActions.length) {
+      h += '<ol style="font-size:13.5px;padding-left:20px">';
+      b.topActions.forEach(function (r) {
+        h += '<li style="margin-bottom:8px"><strong>[' + r.type + ' · ' + escHtml(r.tierLabel) + ']</strong> ' + escHtml(r.title) +
+          (r.detail ? '<br><em style="color:#6b6252">How: ' + escHtml(r.detail) + '</em>' : '') + '</li>';
+      });
+      h += '</ol>';
+    } else {
+      h += '<p style="font-size:13px"><em>No strategies prioritized yet — score impact × effort to rank your actions.</em></p>';
+    }
+
+    h += '<h2 style="font-size:17px;color:#224E3A;margin:16px 0 8px">Full strategy list</h2>';
+    var any = false;
+    TOWS_TYPES.forEach(function (t) {
+      var list = b.ranked.filter(function (r) { return r.type === t; });
+      if (!list.length) return;
+      any = true;
+      h += '<h3 style="font-size:14px;margin:10px 0 4px">' + t + ' — ' + escHtml(TOWS_LABELS[t]) + '</h3><ul style="font-size:13px;padding-left:18px;margin-top:0">';
+      list.forEach(function (r) {
+        h += '<li style="margin-bottom:5px">' + escHtml(r.title) +
+          (r.score > 0 ? ' <span style="color:#6b6252">(#' + r.rank + ', ' + escHtml(r.tierLabel) + ', score ' + r.score + ')</span>' : ' <span style="color:#6b6252">(not voted)</span>') + '</li>';
+      });
+      h += '</ul>';
+    });
+    if (!any) h += '<p style="font-size:13px"><em>No strategies yet.</em></p>';
+    h += '<p style="font-size:11px;color:#8a7c63;margin-top:18px;border-top:1px solid #d8c9a8;padding-top:8px">Built with Quadra — free SWOT &amp; TOWS strategy builder. Notes stored locally in your browser.</p>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderBrief() {
+    var b = buildBrief(state.swot, flatRanked());
+    var html = '<div class="max-w-2xl mx-auto text-center mb-6"><h2 class="text-2xl font-extrabold" style="color:#224E3A">📄 One-page strategy brief</h2>' +
+      '<p class="text-sm mt-1" style="color:#6b6252">Print-optimized — save as PDF or print for the team.</p>' +
+      '<button data-act="print" class="mt-4 font-extrabold text-lg px-8 py-3 rounded-2xl text-white shadow-lg" style="background:linear-gradient(120deg,#2F6B4F,#3d8a61)">🖨️ Print / Save PDF</button></div>' +
+      '<div class="max-w-3xl mx-auto rounded-2xl bg-white shadow-xl border border-[#e0d5ba] p-6 sm:p-10">' + briefInner(b, false) + '</div>';
+    $('step-brief').innerHTML = html;
+    $('brief-print').innerHTML = briefInner(b, true);
+  }
+
+  function renderAll() {
+    renderNav();
+    ['step-board', 'step-worksheet', 'step-matrix', 'step-prioritize', 'step-brief'].forEach(function (id) { $(id).classList.add('hidden'); });
+    var map = { 1: 'step-board', 2: 'step-worksheet', 3: 'step-matrix', 4: 'step-prioritize', 5: 'step-brief' };
+    $(map[state.step]).classList.remove('hidden');
+    renderBoard(); renderWorksheet(); renderMatrix(); renderPrioritize(); renderBrief();
+  }
+
+  /* ---------- events ---------- */
+
+  function addNoteFromInput(q) {
+    var input = document.querySelector('[data-add-input="' + q + '"]');
+    if (!input) return;
+    var r = addNote(state.swot, input.value, q);
+    if (r.error) { toast(r.error); return; }
+    state.swot = r.swot;
+    save(); renderAll();
+    var again = document.querySelector('[data-add-input="' + q + '"]');
+    if (again) again.focus();
+  }
+
+  document.addEventListener('click', function (e) {
+    var navBtn = e.target.closest('[data-nav]');
+    if (navBtn) { goStep(parseInt(navBtn.getAttribute('data-nav'), 10)); return; }
+
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    var act = el.getAttribute('data-act');
+    var id = el.getAttribute('data-id');
+
+    if (act === 'add') { addNoteFromInput(el.getAttribute('data-q')); }
+    else if (act === 'edit') { editingNoteId = id; renderBoard(); var ta = document.querySelector('[data-edit-text]'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }
+    else if (act === 'cancel-edit') { editingNoteId = null; renderBoard(); }
+    else if (act === 'save-edit') {
+      var ta2 = document.querySelector('[data-edit-text]');
+      var r = editNote(state.swot, id, ta2 ? ta2.value : '');
+      if (r.error) { toast(r.error); return; }
+      state.swot = r.swot; editingNoteId = null; save(); renderAll(); toast('Note updated.');
+    }
+    else if (act === 'del') {
+      var d = deleteNote(state.swot, id);
+      if (!d.error) { state.swot = d.swot; save(); renderAll(); toast('Note removed.'); }
+    }
+    else if (act === 'clear') {
+      if (confirm('Remove ALL sticky notes from the board?')) {
+        state = defaultState(); state.step = 1; editingNoteId = null; wizIndex = 0;
+        save(); renderAll(); toast('Board cleared.');
+      }
+    }
+    else if (act === 'to-worksheet' || act === 'to-worksheet2') { goStep(2); }
+    else if (act === 'back-board') { goStep(1); }
+    else if (act === 'to-matrix' || act === 'to-matrix2') { goStep(3); }
+    else if (act === 'to-prioritize') { goStep(4); }
+    else if (act === 'to-brief') { goStep(5); }
+    else if (act === 'wiz-pick') {
+      var _dd = $('wiz-detail');
+      wizDetailDraft = _dd ? _dd.value : '';
+      wizChoice = id; renderWorksheet();
+    }
+    else if (act === 'wiz-back') { wizIndex = Math.max(0, wizIndex - 1); wizChoice = null; wizDetailDraft = ''; renderWorksheet(); scrollToTool(); }
+    else if (act === 'wiz-skip' || act === 'wiz-next') {
+      var prompts = pairingPrompts(state.swot);
+      var p = prompts[wizIndex];
+      if (!p) return;
+      var detailEl = $('wiz-detail');
+      var detail = detailEl ? detailEl.value : '';
+      if (act === 'wiz-skip') { saveAnswer(p.id, null, ''); }
+      else {
+        if (!wizChoice) { toast('Pick the best match above — or Skip if none fits.'); return; }
+        saveAnswer(p.id, wizChoice, detail);
+      }
+      wizIndex++; wizChoice = null; wizDetailDraft = '';
+      renderWorksheet(); scrollToTool();
+    }
+    else if (act === 'wiz-restart') { wizIndex = 0; wizChoice = null; wizDetailDraft = ''; renderWorksheet(); scrollToTool(); }
+    else if (act === 'custom-open') { customFormFor = el.getAttribute('data-t'); renderMatrix(); var ci = $('custom-title'); if (ci) ci.focus(); }
+    else if (act === 'custom-cancel') { customFormFor = null; renderMatrix(); }
+    else if (act === 'custom-save') {
+      var t = el.getAttribute('data-t');
+      var titleEl = $('custom-title'), detEl = $('custom-detail');
+      var cr = addCustomStrategy(mergedStrategies(), t, titleEl ? titleEl.value : '', detEl ? detEl.value : '');
+      if (cr.error) { toast(cr.error); return; }
+      // persist custom separately: extract the newly added one
+      var added = cr.strategy;
+      state.custom[t] = (state.custom[t] || []).concat([added]);
+      customFormFor = null; save(); renderAll(); toast(t + ' strategy added.');
+    }
+    else if (act === 'del-strategy') {
+      var flat = flattenStrategies(mergedStrategies());
+      var s = null;
+      for (var i = 0; i < flat.length; i++) if (flat[i].id === id) { s = flat[i]; break; }
+      if (!s) return;
+      if (s.custom) {
+        state.custom[s.type] = (state.custom[s.type] || []).filter(function (x) { return x.id !== id; });
+      } else {
+        // remove the underlying worksheet answer
+        var ps = pairingPrompts(state.swot);
+        for (var j = 0; j < ps.length; j++) {
+          if (ps[j].type === s.type && ps[j].rowId === s.rowId) {
+            var pid = ps[j].id; break;
+          }
+        }
+        if (typeof pid !== 'undefined') state.answers = state.answers.filter(function (a) { return a.promptId !== pid; });
+      }
+      delete state.votes[id];
+      save(); renderAll(); toast('Strategy removed.');
+    }
+    else if (act === 'print') { renderBrief(); window.print(); }
+  });
+
+  document.addEventListener('change', function (e) {
+    var el = e.target;
+    if (el.id === 'preset-sel' && el.value) {
+      var pr = presetSwot(el.value);
+      if (!pr.error) {
+        state.swot = pr.swot; state.answers = []; state.custom = { SO: [], WO: [], ST: [], WT: [] }; state.votes = {};
+        save(); renderAll(); toast('Example loaded — edit the notes to make them yours.');
+      }
+      return;
+    }
+    if (el.getAttribute('data-act') === 'move') {
+      var id = el.getAttribute('data-id');
+      var to = el.value;
+      var r = moveNote(state.swot, id, to);
+      if (r.error) { toast(r.error); return; }
+      state.swot = r.swot; save(); renderAll(); toast('Moved to ' + QUADRANT_NAMES[to] + '.');
+      return;
+    }
+    if (el.getAttribute('data-vote')) {
+      var sid = el.getAttribute('data-id');
+      var kind = el.getAttribute('data-vote');
+      var val = parseInt(el.value, 10);
+      var cur = state.votes[sid] || {};
+      if (kind === 'impact') cur.impact = val; else cur.effort = val;
+      // require both sliders touched: mark voted once user moves either; default other to current slider value
+      if (!cur.impact) cur.impact = parseInt(document.querySelector('[data-vote="impact"][data-id="' + sid + '"]').value, 10);
+      if (!cur.effort) cur.effort = parseInt(document.querySelector('[data-vote="effort"][data-id="' + sid + '"]').value, 10);
+      state.votes[sid] = cur;
+      save();
+      // live-update labels + tier without full rerender
+      var iv = document.querySelector('[data-iv="' + sid + '"]');
+      var ev = document.querySelector('[data-ev="' + sid + '"]');
+      if (iv) iv.textContent = cur.impact;
+      if (ev) ev.textContent = cur.effort;
+      renderPrioritize();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.getAttribute && e.target.getAttribute('data-add-input')) {
+      e.preventDefault();
+      addNoteFromInput(e.target.getAttribute('data-add-input'));
+    }
+  });
+
+  /* drag & drop */
+  var dragId = null;
+  document.addEventListener('dragstart', function (e) {
+    var n = e.target.closest && e.target.closest('[data-note-id]');
+    if (!n || !n.getAttribute('draggable')) return;
+    dragId = n.getAttribute('data-note-id');
+    try { e.dataTransfer.setData('text/plain', dragId); e.dataTransfer.effectAllowed = 'move'; } catch (err) {}
+    setTimeout(function () { n.classList.add('dragging'); }, 0);
+  });
+  document.addEventListener('dragend', function (e) {
+    var n = e.target.closest && e.target.closest('[data-note-id]');
+    if (n) n.classList.remove('dragging');
+    dragId = null;
+    document.querySelectorAll('.drop-hint').forEach(function (d) { d.classList.remove('drop-hint'); });
+  });
+  document.addEventListener('dragover', function (e) {
+    var z = e.target.closest && e.target.closest('[data-drop]');
+    if (z && dragId) { e.preventDefault(); z.classList.add('drop-hint'); try { e.dataTransfer.dropEffect = 'move'; } catch (err) {} }
+  });
+  document.addEventListener('dragleave', function (e) {
+    var z = e.target.closest && e.target.closest('[data-drop]');
+    if (z) z.classList.remove('drop-hint');
+  });
+  document.addEventListener('drop', function (e) {
+    var z = e.target.closest && e.target.closest('[data-drop]');
+    if (!z || !dragId) return;
+    e.preventDefault();
+    var to = z.getAttribute('data-drop');
+    var r = moveNote(state.swot, dragId, to);
+    if (!r.error) { state.swot = r.swot; save(); renderAll(); toast('Note moved to ' + QUADRANT_NAMES[to] + '.'); }
+    dragId = null;
+  });
+
+  window.addEventListener('beforeprint', function () { renderBrief(); });
+
+  /* init */
+  load();
+  renderAll();
+})();
+</script>
+</body>
+</html>
